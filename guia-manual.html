@@ -1,0 +1,2756 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual de Deploy — SecretStore Organizer (Panel Admin + API + Programa)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #7c3aed;
+      --primary-dark: #5b21b6;
+      --primary-light: #ede9fe;
+      --success: #059669;
+      --success-light: #d1fae5;
+      --warning: #d97706;
+      --warning-light: #fef3c7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --info: #0284c7;
+      --info-light: #e0f2fe;
+      --dark: #1e1b4b;
+      --gray-900: #111827;
+      --gray-800: #1f2937;
+      --gray-700: #374151;
+      --gray-600: #4b5563;
+      --gray-500: #6b7280;
+      --gray-400: #9ca3af;
+      --gray-300: #d1d5db;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --gray-50: #f9fafb;
+      --white: #ffffff;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.6;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 280px;
+      height: 100vh;
+      background: var(--dark);
+      overflow-y: auto;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-logo {
+      padding: 22px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-logo h2 {
+      color: var(--white);
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .sidebar-logo span {
+      color: #a78bfa;
+      font-size: 11px;
+      font-weight: 400;
+    }
+
+    .sidebar nav { padding: 12px 0; flex: 1; }
+
+    .nav-section {
+      padding: 10px 20px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #6d6d8f;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      color: #c4c4d4;
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.2s;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+    }
+
+    .nav-item:hover, .nav-item.active {
+      background: rgba(124,58,237,0.2);
+      color: #c4b5fd;
+      border-left-color: var(--primary);
+    }
+
+    .nav-item .num {
+      width: 20px;
+      height: 20px;
+      background: var(--primary);
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 700;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .nav-item .num.warn { background: #d97706; }
+    .nav-item .num.ok   { background: #059669; }
+
+    .main { margin-left: 280px; min-height: 100vh; }
+
+    .hero {
+      background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 50%, #7c3aed 100%);
+      padding: 56px 52px;
+      color: white;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 100px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+
+    .hero h1 span { color: #c4b5fd; }
+
+    .hero p {
+      font-size: 16px;
+      color: rgba(255,255,255,0.82);
+      max-width: 620px;
+      margin-bottom: 30px;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 36px;
+      flex-wrap: wrap;
+    }
+
+    .hero-stat { text-align: center; }
+
+    .hero-stat strong {
+      display: block;
+      font-size: 26px;
+      font-weight: 800;
+      color: #c4b5fd;
+    }
+
+    .hero-stat span {
+      font-size: 12px;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .content { padding: 40px 52px; max-width: 960px; }
+
+    .section { margin-bottom: 64px; scroll-margin-top: 24px; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+
+    .section-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .section-header h2 {
+      font-size: 23px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    .section-header p {
+      font-size: 14px;
+      color: var(--gray-500);
+      margin-top: 2px;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .steps { display: flex; flex-direction: column; gap: 14px; }
+
+    .step {
+      display: flex;
+      gap: 16px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .step:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .step-num {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .step-num.warn { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+    .step-body { flex: 1; }
+
+    .step-body h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 6px;
+    }
+
+    .step-body p {
+      font-size: 14px;
+      color: var(--gray-600);
+      margin-bottom: 8px;
+    }
+
+    .screen-mock {
+      background: #0f172a;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 14px 0;
+      border: 1px solid #334155;
+    }
+
+    .screen-bar {
+      background: #1e293b;
+      padding: 9px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .screen-dots { display: flex; gap: 5px; }
+    .screen-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .screen-dot.r { background: #ef4444; }
+    .screen-dot.y { background: #f59e0b; }
+    .screen-dot.g { background: #22c55e; }
+
+    .screen-url {
+      flex: 1;
+      background: #0f172a;
+      border-radius: 4px;
+      padding: 3px 10px;
+      font-size: 11px;
+      color: #64748b;
+      font-family: monospace;
+    }
+
+    .screen-body {
+      padding: 16px;
+      font-size: 13px;
+      color: #94a3b8;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      line-height: 1.8;
+    }
+
+    .screen-body .hl  { color: #fbbf24; font-weight: 700; }
+    .screen-body .gr  { color: #4ade80; }
+    .screen-body .bl  { color: #7dd3fc; }
+    .screen-body .pk  { color: #f472b6; }
+    .screen-body .dim { color: #475569; }
+    .screen-body .red { color: #f87171; }
+    .screen-body .box {
+      display: inline-block;
+      background: rgba(124,58,237,0.25);
+      border: 1px solid #7c3aed;
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: #c4b5fd;
+    }
+
+    .visual-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 14px 0;
+    }
+
+    .vstep {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+    }
+
+    .vstep-line {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 32px;
+      flex-shrink: 0;
+    }
+
+    .vstep-dot {
+      width: 12px;
+      height: 12px;
+      background: var(--primary);
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px var(--primary);
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    .vstep-connector {
+      width: 2px;
+      flex: 1;
+      min-height: 20px;
+      background: #e5e7eb;
+      margin: 2px 0;
+    }
+
+    .vstep:last-child .vstep-connector { display: none; }
+
+    .vstep-content {
+      flex: 1;
+      padding: 4px 0 20px 12px;
+    }
+
+    .vstep-content strong {
+      display: block;
+      font-size: 13.5px;
+      color: var(--gray-800);
+      margin-bottom: 2px;
+    }
+
+    .vstep-content p {
+      font-size: 13px;
+      color: var(--gray-500);
+      margin: 0;
+    }
+
+    .field-highlight {
+      background: #fef9c3;
+      border: 1px dashed #f59e0b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 10px 0;
+      font-size: 13.5px;
+      color: var(--gray-700);
+    }
+
+    .field-highlight .label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #92400e;
+      margin-bottom: 4px;
+    }
+
+    .field-highlight code {
+      background: white;
+      color: var(--primary-dark);
+      border: 1px solid #fde68a;
+    }
+
+    .nav-path {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px;
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+
+    .nav-path .crumb {
+      background: white;
+      border: 1px solid var(--gray-300);
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      font-size: 12px;
+    }
+
+    .nav-path .sep { color: var(--gray-400); font-size: 16px; }
+
+    .code-block {
+      background: #0f172a;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 16px;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+    }
+
+    .code-header span {
+      font-size: 12px;
+      color: #94a3b8;
+      font-family: monospace;
+    }
+
+    .copy-btn {
+      background: #334155;
+      color: #94a3b8;
+      border: none;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover { background: var(--primary); color: white; }
+
+    .code-block pre {
+      padding: 16px;
+      font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+      font-size: 13px;
+      color: #e2e8f0;
+      overflow-x: auto;
+      line-height: 1.7;
+    }
+
+    .code-block pre .c  { color: #64748b; }
+    .code-block pre .k  { color: #c084fc; }
+    .code-block pre .s  { color: #86efac; }
+    .code-block pre .v  { color: #7dd3fc; }
+    .code-block pre .w  { color: #fbbf24; }
+    .code-block pre .ok { color: #4ade80; }
+
+    code {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+
+    .alert {
+      display: flex;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 10px;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+
+    .alert-icon { font-size: 20px; flex-shrink: 0; }
+    .alert-body strong { display: block; margin-bottom: 4px; }
+    .alert-body ul { margin-top:6px; padding-left:16px; }
+    .alert-body li { margin-bottom: 3px; }
+
+    .alert-warning { background: var(--warning-light); border: 1px solid #fcd34d; color: #92400e; }
+    .alert-success { background: var(--success-light); border: 1px solid #6ee7b7; color: #065f46; }
+    .alert-info    { background: var(--info-light);    border: 1px solid #7dd3fc; color: #0c4a6e; }
+    .alert-danger  { background: var(--danger-light);  border: 1px solid #fca5a5; color: #7f1d1d; }
+
+    .env-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .env-item {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .env-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: white;
+      border-bottom: 1px solid var(--gray-100);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .env-item-header:hover { background: var(--gray-50); }
+
+    .env-name {
+      font-family: monospace;
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 13px;
+    }
+
+    .env-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .badge-required { background: #fee2e2; color: #b91c1c; }
+    .badge-optional { background: #f0fdf4; color: #15803d; }
+    .badge-auto { background: #e0f2fe; color: #0c4a6e; }
+
+    .env-toggle { font-size: 18px; color: var(--gray-400); line-height: 1; transition: transform 0.2s; }
+    .env-toggle.open { transform: rotate(90deg); }
+
+    .env-item-body {
+      padding: 16px;
+      display: none;
+    }
+
+    .env-item-body.open { display: block; }
+
+    .env-desc {
+      font-size: 14px;
+      color: var(--gray-700);
+      margin-bottom: 10px;
+    }
+
+    .env-value-box {
+      background: var(--primary-light);
+      border: 1px solid #c4b5fd;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-family: monospace;
+      font-size: 12.5px;
+      color: var(--primary-dark);
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+
+    .env-howto {
+      border-left: 3px solid var(--primary);
+      padding-left: 12px;
+      margin-top: 10px;
+    }
+
+    .env-howto-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--primary-dark);
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .env-howto ol {
+      padding-left: 16px;
+      font-size: 13px;
+      color: var(--gray-600);
+    }
+
+    .env-howto ol li { margin-bottom: 4px; }
+
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--gray-700);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .checklist li:hover { background: var(--gray-50); }
+
+    .check-box {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--gray-300);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 12px;
+      transition: all 0.15s;
+    }
+
+    .checklist li.done .check-box {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    .checklist li.done span { text-decoration: line-through; color: var(--gray-400); }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin: 16px 0;
+    }
+
+    .flow-item {
+      background: var(--white);
+      border: 2px solid var(--primary-light);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      text-align: center;
+    }
+
+    .flow-arrow { color: var(--gray-400); font-size: 20px; }
+
+    .simple-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .simple-table th {
+      background: var(--gray-800);
+      color: white;
+      padding: 11px 14px;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .simple-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--gray-100);
+      vertical-align: middle;
+    }
+
+    .simple-table tr:last-child td { border-bottom: none; }
+    .simple-table tr:hover td { background: var(--gray-50); }
+
+    .footer {
+      margin-left: 280px;
+      background: var(--dark);
+      color: rgba(255,255,255,0.45);
+      text-align: center;
+      padding: 22px;
+      font-size: 13px;
+    }
+
+    .progress-bar-wrap {
+      position: sticky;
+      top: 0;
+      background: white;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 8px 52px;
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .progress-bar-label {
+      font-size: 12px;
+      color: var(--gray-500);
+      white-space: nowrap;
+    }
+
+    .progress-bar-track {
+      flex: 1;
+      height: 6px;
+      background: var(--gray-200);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #a855f7);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.4s;
+    }
+
+    .progress-pct {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      min-width: 36px;
+    }
+
+    .notepad {
+      background: #fffbeb;
+      border: 2px solid #f59e0b;
+      border-radius: 14px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+
+    .notepad-header {
+      background: #f59e0b;
+      color: #1c1917;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .notepad-header h3 {
+      font-size: 14px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .notepad-header p {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+
+    .notepad-body { padding: 16px 20px; }
+
+    .notepad-group { margin-bottom: 16px; }
+
+    .notepad-group-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #92400e;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .notepad-row {
+      display: grid;
+      grid-template-columns: 200px 1fr auto;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .notepad-label {
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      background: var(--primary-light);
+      padding: 6px 10px;
+      border-radius: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .notepad-input {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 12px;
+      background: white;
+      color: var(--gray-800);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .notepad-input:focus {
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+    }
+
+    .notepad-input.filled {
+      border-color: #059669;
+      background: #f0fdf4;
+    }
+
+    .notepad-status {
+      font-size: 16px;
+      width: 24px;
+      text-align: center;
+    }
+
+    .notepad-footer {
+      padding: 12px 20px;
+      background: rgba(245,158,11,0.08);
+      border-top: 1px solid #fcd34d;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .notepad-count { font-size: 13px; color: #92400e; }
+
+    .notepad-copy-all {
+      background: #f59e0b;
+      color: #1c1917;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+
+    .notepad-copy-all:hover { background: #d97706; }
+
+    .glossary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .glossary-item {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 14px;
+    }
+
+    .glossary-term {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .glossary-def {
+      font-size: 12.5px;
+      color: var(--gray-600);
+      line-height: 1.5;
+    }
+
+    .screen-annotation {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .screen-annotation:last-child { border-bottom: none; }
+    .screen-annotation-num {
+      min-width: 24px;
+      height: 24px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      font-size: 11px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .screen-annotation-body strong {
+      display: block;
+      font-size: 13px;
+      color: var(--gray-800);
+    }
+    .screen-annotation-body span {
+      font-size: 12.5px;
+      color: var(--gray-500);
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { width: 100%; height: auto; position: relative; }
+      .main, .footer { margin-left: 0; }
+      .hero { padding: 32px 24px; }
+      .hero h1 { font-size: 28px; }
+      .content { padding: 24px; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .glossary { grid-template-columns: 1fr; }
+      .notepad-row { grid-template-columns: 1fr; }
+    }
+
+    @media print {
+      .sidebar { display: none; }
+      .main, .footer { margin-left: 0; }
+      .env-item-body { display: block !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h2>🛡️ Manual de Deploy</h2>
+    <span>SecretStore Organizer — Completo</span>
+  </div>
+  <nav>
+    <div class="nav-section">Introdução</div>
+    <a class="nav-item active" href="#visao-geral">
+      <span class="num">0</span> Visão Geral
+    </a>
+    <a class="nav-item" href="#glossario">
+      <span class="num">📚</span> Glossário
+    </a>
+    <a class="nav-item" href="#bloco-notas">
+      <span class="num">📝</span> Bloco de Notas
+    </a>
+
+    <div class="nav-section">Preparação</div>
+    <a class="nav-item" href="#contas">
+      <span class="num">1</span> Criar Contas
+    </a>
+    <a class="nav-item" href="#github">
+      <span class="num">2</span> Subir para GitHub
+    </a>
+
+    <div class="nav-section">Railway — API Backend</div>
+    <a class="nav-item" href="#railway-projeto">
+      <span class="num">3</span> Criar Projeto Railway
+    </a>
+    <a class="nav-item" href="#railway-banco">
+      <span class="num">4</span> Banco PostgreSQL
+    </a>
+    <a class="nav-item" href="#railway-api">
+      <span class="num">5</span> Serviço: API
+    </a>
+    <a class="nav-item" href="#variaveis-api">
+      <span class="num">6</span> Variáveis da API
+    </a>
+    <a class="nav-item" href="#banco-init">
+      <span class="num">7</span> Inicializar Banco
+    </a>
+
+    <div class="nav-section">Panel Admin (Web)</div>
+    <a class="nav-item" href="#railway-panel">
+      <span class="num">8</span> Serviço: Panel Admin
+    </a>
+    <a class="nav-item" href="#variaveis-panel">
+      <span class="num">9</span> Variáveis do Panel
+    </a>
+
+    <div class="nav-section">Programa (.exe)</div>
+    <a class="nav-item" href="#programa-config">
+      <span class="num">10</span> Configurar URL no .exe
+    </a>
+    <a class="nav-item" href="#programa-build">
+      <span class="num">11</span> Compilar o Programa
+    </a>
+
+    <div class="nav-section">Finalização</div>
+    <a class="nav-item" href="#testar-tudo">
+      <span class="num">12</span> Testar Tudo
+    </a>
+    <a class="nav-item" href="#checklist">
+      <span class="num ok">✓</span> Checklist Final
+    </a>
+    <a class="nav-item" href="#problemas">
+      <span class="num warn">!</span> Problemas Comuns
+    </a>
+  </nav>
+</aside>
+
+<!-- ══════════════════════════════════════ MAIN ══ -->
+<div class="main">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">📖 Guia Completo — SecretStore Organizer v2.1.0</div>
+    <h1>Deploy Completo:<br/><span>API + Panel Admin + Programa</span></h1>
+    <p>Manual passo a passo para colocar todo o sistema no ar — o painel web de administração, a API que conecta tudo, e a configuração do programa .exe que roda nos computadores dos clientes. Pensado para quem nunca fez deploy antes.</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <strong>~30min</strong>
+        <span>tempo estimado</span>
+      </div>
+      <div class="hero-stat">
+        <strong>12</strong>
+        <span>etapas detalhadas</span>
+      </div>
+      <div class="hero-stat">
+        <strong>3</strong>
+        <span>componentes do sistema</span>
+      </div>
+      <div class="hero-stat">
+        <strong>$0</strong>
+        <span>custo para começar</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-bar-wrap">
+    <span class="progress-bar-label">Progresso do manual</span>
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <span class="progress-pct" id="progressPct">0%</span>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ 0. VISÃO GERAL ══ -->
+    <div class="section" id="visao-geral">
+      <div class="section-header">
+        <div class="section-icon" style="background:#ede9fe;">🗺️</div>
+        <div>
+          <h2>Visão Geral da Arquitetura</h2>
+          <p>Entenda como as 3 peças do sistema se conectam</p>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-icon">💡</div>
+        <div class="alert-body">
+          <strong>O sistema tem 3 componentes principais:</strong>
+          <ul>
+            <li><strong>API (Backend)</strong> — o "cérebro" que gerencia autenticação, licenças e dados</li>
+            <li><strong>Panel Admin (Frontend Web)</strong> — o painel onde você gerencia clientes, módulos e licenças</li>
+            <li><strong>Programa (.exe)</strong> — o aplicativo que roda no PC dos clientes e se comunica com a API</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔄 Como o sistema funciona</div>
+        <div class="flow">
+          <div class="flow-item">👨‍💼 Você (Admin)<br/><small>gerencia clientes</small></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-item">🌐 Panel Admin<br/><small>interface web</small></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-item">⚙️ API (Railway)<br/><small>processa tudo</small></div>
+          <div class="flow-arrow">←</div>
+          <div class="flow-item">💻 Programa .exe<br/><small>PC dos clientes</small></div>
+        </div>
+        <p style="font-size:13.5px;color:var(--gray-600);">O Panel Admin e o Programa .exe ambos conversam com a mesma API. A API é o ponto central que valida logins, verifica licenças e controla quais módulos cada cliente pode usar.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">⚙️ API Backend</div>
+          <p style="font-size:13px;color:var(--gray-600);">Node.js + Express + PostgreSQL. Roda no Railway 24h. Gerencia autenticação, sessões, permissões e logs. <strong>Porta 3001.</strong></p>
+        </div>
+        <div class="card">
+          <div class="card-title">🌐 Panel Admin</div>
+          <p style="font-size:13px;color:var(--gray-600);">Interface web para o administrador. Cadastra clientes, define módulos permitidos, reseta senhas, visualiza logs. <strong>Roda no Railway ou Vercel.</strong></p>
+        </div>
+        <div class="card">
+          <div class="card-title">💻 Programa .exe</div>
+          <p style="font-size:13px;color:var(--gray-600);">Electron + Python. Roda no PC do cliente. Faz login via API, verifica permissões e executa os 5 módulos (mapas, veículos, roupas, peds, weapons).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ GLOSSÁRIO ══ -->
+    <div class="section" id="glossario">
+      <div class="section-header">
+        <div class="section-icon" style="background:#e0f2fe;">📚</div>
+        <div>
+          <h2>Glossário — Termos Técnicos Explicados</h2>
+          <p>Leia isso antes de começar se nunca fez deploy</p>
+        </div>
+      </div>
+
+      <div class="glossary">
+        <div class="glossary-item">
+          <div class="glossary-term">🚂 Railway</div>
+          <div class="glossary-def">Serviço de hospedagem na nuvem. Seu código roda em servidores deles 24h. Plano gratuito com $5/mês de crédito. É onde a API e o Panel Admin vão ficar.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">🐘 PostgreSQL</div>
+          <div class="glossary-def">Banco de dados gratuito e profissional. Guarda todos os dados: clientes, senhas, módulos, logs de acesso. O Railway cria e gerencia para você automaticamente.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">🔑 JWT (Token)</div>
+          <div class="glossary-def">Uma "pulseira digital" que prova que alguém está logado. Quando o cliente faz login, recebe um token. A cada ação, mostra o token para provar que tem acesso.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">🌍 Variável de Ambiente</div>
+          <div class="glossary-def">Configurações sensíveis (senhas, URLs) guardadas fora do código. Ficam no servidor e só o programa consegue ler. Mais seguro que colocar senhas no código.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">📦 API (Application Programming Interface)</div>
+          <div class="glossary-def">O "garçom" entre o programa/painel e o banco de dados. Recebe pedidos (login, listar módulos), consulta o banco e devolve a resposta.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">🏗️ Deploy</div>
+          <div class="glossary-def">O processo de colocar o código na internet. Você envia para o GitHub, o Railway pega de lá e faz rodar em um servidor público.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">💻 Electron</div>
+          <div class="glossary-def">Tecnologia que permite criar programas de computador (.exe) usando HTML, CSS e JavaScript. O programa SecretStore Organizer é feito com Electron.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">🐍 PyInstaller</div>
+          <div class="glossary-def">Ferramenta que transforma scripts Python (.py) em executáveis (.exe) independentes. Os 5 módulos do programa são compilados assim.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">🔐 DATABASE_URL</div>
+          <div class="glossary-def">Endereço completo do banco de dados com usuário e senha embutidos. O Railway gera automaticamente quando você cria o PostgreSQL.</div>
+        </div>
+        <div class="glossary-item">
+          <div class="glossary-term">🐙 GitHub</div>
+          <div class="glossary-def">"Google Drive" para código. Guarda o histórico de todas as alterações. O Railway busca o código daqui para fazer o deploy.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ BLOCO DE NOTAS ══ -->
+    <div class="section" id="bloco-notas">
+      <div class="section-header">
+        <div class="section-icon" style="background:#fef9c3;">📝</div>
+        <div>
+          <h2>Bloco de Notas — Suas Configurações</h2>
+          <p>Preencha conforme avançar — use o botão "Copiar tudo" no final</p>
+        </div>
+      </div>
+
+      <div class="alert alert-warning">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>Dados ficam apenas no seu navegador.</strong> Não são enviados para nenhum servidor. Mesmo assim, não use em computadores públicos.
+        </div>
+      </div>
+
+      <div class="notepad">
+        <div class="notepad-header">
+          <div>
+            <h3>📋 Minhas Credenciais — SecretStore</h3>
+            <p>Preencha conforme for obtendo cada valor</p>
+          </div>
+          <span id="notepad-progress-badge" style="background:rgba(0,0,0,0.15);padding:4px 12px;border-radius:100px;font-size:12px;font-weight:700;">0 / 8 preenchidas</span>
+        </div>
+
+        <div class="notepad-body">
+          <div class="notepad-group">
+            <div class="notepad-group-title">🐘 Banco de Dados (Railway PostgreSQL)</div>
+            <div class="notepad-row">
+              <div class="notepad-label">DATABASE_URL</div>
+              <input class="notepad-input" id="npad_DATABASE_URL" type="password" placeholder="postgresql://postgres:senha@host:5432/railway" oninput="updateNotepad(this)" autocomplete="off"/>
+              <div class="notepad-status" id="npad_DATABASE_URL_st">⬜</div>
+            </div>
+          </div>
+
+          <div class="notepad-group">
+            <div class="notepad-group-title">🔐 Segredos (Gerar na Etapa 6)</div>
+            <div class="notepad-row">
+              <div class="notepad-label">JWT_SECRET</div>
+              <input class="notepad-input" id="npad_JWT_SECRET" type="password" placeholder="64 caracteres aleatórios" oninput="updateNotepad(this)" autocomplete="off"/>
+              <div class="notepad-status" id="npad_JWT_SECRET_st">⬜</div>
+            </div>
+          </div>
+
+          <div class="notepad-group">
+            <div class="notepad-group-title">🌐 URLs dos Serviços (Etapas 5 e 8)</div>
+            <div class="notepad-row">
+              <div class="notepad-label">URL da API</div>
+              <input class="notepad-input" id="npad_API_URL" type="text" placeholder="https://secretstore-api-production.up.railway.app" oninput="updateNotepad(this)" autocomplete="off"/>
+              <div class="notepad-status" id="npad_API_URL_st">⬜</div>
+            </div>
+            <div class="notepad-row">
+              <div class="notepad-label">URL do Panel Admin</div>
+              <input class="notepad-input" id="npad_PANEL_URL" type="text" placeholder="https://secretstore-panel-production.up.railway.app" oninput="updateNotepad(this)" autocomplete="off"/>
+              <div class="notepad-status" id="npad_PANEL_URL_st">⬜</div>
+            </div>
+          </div>
+
+          <div class="notepad-group">
+            <div class="notepad-group-title">👤 Admin Inicial (Etapa 6)</div>
+            <div class="notepad-row">
+              <div class="notepad-label">ADMIN_EMAIL</div>
+              <input class="notepad-input" id="npad_ADMIN_EMAIL" type="text" placeholder="admin@secretstore.com" oninput="updateNotepad(this)" autocomplete="off"/>
+              <div class="notepad-status" id="npad_ADMIN_EMAIL_st">⬜</div>
+            </div>
+            <div class="notepad-row">
+              <div class="notepad-label">ADMIN_PASSWORD</div>
+              <input class="notepad-input" id="npad_ADMIN_PASSWORD" type="password" placeholder="SuaSenhaForte@123" oninput="updateNotepad(this)" autocomplete="off"/>
+              <div class="notepad-status" id="npad_ADMIN_PASSWORD_st">⬜</div>
+            </div>
+          </div>
+
+          <div class="notepad-group">
+            <div class="notepad-group-title">⚙️ Configurações Extras</div>
+            <div class="notepad-row">
+              <div class="notepad-label">JWT_EXPIRES_IN</div>
+              <input class="notepad-input" id="npad_JWT_EXPIRES_IN" type="text" placeholder="7d" value="7d" oninput="updateNotepad(this)" autocomplete="off"/>
+              <div class="notepad-status" id="npad_JWT_EXPIRES_IN_st">⬜</div>
+            </div>
+            <div class="notepad-row">
+              <div class="notepad-label">JWT_ADMIN_EXPIRES_IN</div>
+              <input class="notepad-input" id="npad_JWT_ADMIN_EXPIRES_IN" type="text" placeholder="24h" value="24h" oninput="updateNotepad(this)" autocomplete="off"/>
+              <div class="notepad-status" id="npad_JWT_ADMIN_EXPIRES_IN_st">⬜</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="notepad-footer">
+          <div>
+            <div class="notepad-count" id="notepad-count-label">0 de 8 campos preenchidos</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onclick="toggleNotepadVisibility()" style="padding:8px 14px;background:#e2e8f0;color:#374151;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">👁️ Revelar / Ocultar</button>
+            <button class="notepad-copy-all" onclick="copyAllNotepad()">📋 Copiar tudo formatado</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 1. CRIAR CONTAS ══ -->
+    <div class="section" id="contas">
+      <div class="section-header">
+        <div class="section-icon" style="background:#dbeafe;">👤</div>
+        <div>
+          <h2>Etapa 1 — Criar as Contas Necessárias</h2>
+          <p>Apenas 2 contas — leva 5 minutos</p>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>🐙 GitHub — <a href="https://github.com" target="_blank">github.com</a></h3>
+            <p>Onde o código da API e do Panel Admin ficam guardados. O Railway vai buscar o código daqui automaticamente.</p>
+            <div class="visual-steps">
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Acesse github.com e clique em "Sign up"</strong><p>Se já tem conta, pule para o próximo passo.</p></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Informe e-mail, senha e nome de usuário</strong><p>O nome de usuário é público. Ex: <code>meuusuario</code></p></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div></div>
+                <div class="vstep-content"><strong>Confirme o e-mail clicando no link que o GitHub envia</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>🚂 Railway — <a href="https://railway.app" target="_blank">railway.app</a></h3>
+            <p>Onde a API e o Panel Admin vão rodar 24 horas por dia. Gratuito até $5/mês de uso.</p>
+            <div class="visual-steps">
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Acesse railway.app e clique em "Login"</strong></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Selecione "Login with GitHub"</strong><p>Use SEMPRE o login com GitHub — não crie conta separada.</p></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div></div>
+                <div class="vstep-content"><strong>Autorize o Railway quando pedido</strong><p>Clique em "Authorize railway-app".</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 2. GITHUB ══ -->
+    <div class="section" id="github">
+      <div class="section-header">
+        <div class="section-icon" style="background:#f3f4f6;">🐙</div>
+        <div>
+          <h2>Etapa 2 — Subir o Código para o GitHub</h2>
+          <p>Você vai subir 2 repositórios: um para a API e outro para o Panel Admin</p>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-icon">💡</div>
+        <div class="alert-body">
+          <strong>Pré-requisito:</strong> Git instalado no PC. Se não tem, baixe em <a href="https://git-scm.com/download/win" target="_blank">git-scm.com</a> e instale com opções padrão. Após instalar, feche e reabra o terminal.
+        </div>
+      </div>
+
+      <!-- Repo 1: API -->
+      <div class="card">
+        <div class="card-title">⚙️ Repositório 1: secretstore-api</div>
+        <div class="visual-steps">
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+            <div class="vstep-content"><strong>Acesse <a href="https://github.com/new" target="_blank">github.com/new</a></strong><p>Criação de novo repositório.</p></div>
+          </div>
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+            <div class="vstep-content">
+              <strong>Preencha:</strong>
+              <p>Repository name: <code>secretstore-api</code> | Visibility: <strong>Private</strong> | NÃO marque README ou .gitignore</p>
+            </div>
+          </div>
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div></div>
+            <div class="vstep-content"><strong>Clique em "Create repository"</strong></div>
+          </div>
+        </div>
+
+        <p style="font-size:14px;font-weight:700;color:var(--gray-800);margin:14px 0 8px;">Agora no terminal, na pasta da API:</p>
+        <div class="code-block">
+          <div class="code-header"><span>terminal — pasta secretstore-api</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+          <pre><span class="c"># Entre na pasta da API</span>
+cd secretstore-api
+
+<span class="c"># Inicia o Git</span>
+git init
+
+<span class="c"># Adiciona todos os arquivos</span>
+git add .
+
+<span class="c"># Cria o primeiro commit</span>
+git commit -m <span class="s">"feat: initial API setup"</span>
+
+<span class="c"># Renomeia branch</span>
+git branch -M main
+
+<span class="c"># Conecta ao GitHub (TROQUE SEU_USUARIO!)</span>
+git remote add origin https://github.com/<span class="w">SEU_USUARIO</span>/secretstore-api.git
+
+<span class="c"># Envia para o GitHub</span>
+git push -u origin main</pre>
+        </div>
+      </div>
+
+      <!-- Repo 2: Panel -->
+      <div class="card">
+        <div class="card-title">🌐 Repositório 2: secretstore-panel</div>
+        <div class="visual-steps">
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+            <div class="vstep-content"><strong>Acesse <a href="https://github.com/new" target="_blank">github.com/new</a> novamente</strong></div>
+          </div>
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+            <div class="vstep-content"><strong>Repository name: <code>secretstore-panel</code> | Visibility: Private</strong></div>
+          </div>
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div></div>
+            <div class="vstep-content"><strong>Clique em "Create repository"</strong></div>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header"><span>terminal — pasta do panel-admin</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+          <pre><span class="c"># Entre na pasta do Panel Admin</span>
+cd panel-admin
+
+<span class="c"># Inicia o Git</span>
+git init
+
+<span class="c"># Adiciona todos os arquivos</span>
+git add .
+
+<span class="c"># Cria o primeiro commit</span>
+git commit -m <span class="s">"feat: initial panel setup"</span>
+
+<span class="c"># Renomeia branch</span>
+git branch -M main
+
+<span class="c"># Conecta ao GitHub (TROQUE SEU_USUARIO!)</span>
+git remote add origin https://github.com/<span class="w">SEU_USUARIO</span>/secretstore-panel.git
+
+<span class="c"># Envia para o GitHub</span>
+git push -u origin main</pre>
+        </div>
+      </div>
+
+      <div class="alert alert-warning">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>Se pedir usuário e senha:</strong> Use seu nome de usuário do GitHub e, como senha, crie um <strong>Personal Access Token</strong> em <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> (marque permissão "repo").
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 3. RAILWAY PROJETO ══ -->
+    <div class="section" id="railway-projeto">
+      <div class="section-header">
+        <div class="section-icon" style="background:#f3e8ff;">🚂</div>
+        <div>
+          <h2>Etapa 3 — Criar o Projeto no Railway</h2>
+          <p>Um projeto contém todos os serviços: API, Panel e Banco de Dados</p>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Acesse <a href="https://railway.app/dashboard" target="_blank">railway.app/dashboard</a></h3>
+            <p>Se não estiver logado, entre com GitHub.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Clique em "New Project" (botão roxo, canto superior direito)</h3>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Selecione "Empty Project" (Projeto Vazio)</h3>
+            <p>Vamos adicionar os serviços manualmente — isso dá mais controle.</p>
+            <div class="alert alert-info">
+              <div class="alert-icon">💡</div>
+              <div class="alert-body">Se só aparecer "Deploy from GitHub repo", selecione essa opção e depois adicione os demais serviços. Mas "Empty Project" é o ideal.</div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Renomeie o projeto (opcional)</h3>
+            <p>Clique no nome do projeto no topo e renomeie para <code>SecretStore</code> ou como preferir.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 4. BANCO POSTGRESQL ══ -->
+    <div class="section" id="railway-banco">
+      <div class="section-header">
+        <div class="section-icon" style="background:#dbeafe;">🐘</div>
+        <div>
+          <h2>Etapa 4 — Adicionar o Banco de Dados PostgreSQL</h2>
+          <p>O banco onde ficam guardados clientes, senhas e permissões</p>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>No painel do projeto, clique em "+ New" ou "Add Service"</h3>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Selecione "Database" → "Add PostgreSQL"</h3>
+            <p>O Railway cria o banco em ~30 segundos. Aparecerá como um card no seu projeto.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Copie a DATABASE_URL</h3>
+            <p>Clique no card do PostgreSQL → aba <strong>Variables</strong> → copie o valor de <code>DATABASE_URL</code>.</p>
+            <div class="screen-mock">
+              <div class="screen-bar">
+                <div class="screen-dots"><div class="screen-dot r"></div><div class="screen-dot y"></div><div class="screen-dot g"></div></div>
+                <div class="screen-url">railway.app → PostgreSQL → Variables</div>
+              </div>
+              <div class="screen-body">
+  <span class="hl">Variables</span>
+
+  DATABASE_URL    <span class="box">postgresql://postgres:AbCdEf123@containers-us-west-xxx.railway.app:5432/railway</span>
+                  [  📋 Copy  ]
+
+  <span class="dim">PGDATABASE     railway</span>
+  <span class="dim">PGHOST         containers-us-west-xxx.railway.app</span>
+  <span class="dim">PGPASSWORD     AbCdEf123</span>
+  <span class="dim">PGPORT         5432</span>
+  <span class="dim">PGUSER         postgres</span>
+              </div>
+            </div>
+            <div class="field-highlight">
+              <div class="label">📝 Cole no Bloco de Notas acima no campo DATABASE_URL</div>
+              Começa com <code>postgresql://</code> — é uma URL longa com a senha do banco embutida.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 5. SERVIÇO API ══ -->
+    <div class="section" id="railway-api">
+      <div class="section-header">
+        <div class="section-icon" style="background:#d1fae5;">⚙️</div>
+        <div>
+          <h2>Etapa 5 — Adicionar o Serviço da API</h2>
+          <p>Conectando o repositório da API ao Railway</p>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>No projeto, clique em "+ New" → "GitHub Repo"</h3>
+            <p>Se pedir para configurar o GitHub App, clique em "Configure" e autorize o acesso ao repositório <code>secretstore-api</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Selecione o repositório <code>secretstore-api</code></h3>
+            <p>O Railway detecta automaticamente que é um projeto Node.js e configura o build.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>O deploy vai falhar — isso é normal!</h3>
+            <p>Sem as variáveis de ambiente, o servidor não consegue iniciar. Continue para a Etapa 6.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Gere o domínio público da API</h3>
+            <p>Clique no serviço API → aba <strong>Settings</strong> → seção <strong>Networking</strong> → <strong>"Generate Domain"</strong></p>
+            <div class="screen-mock">
+              <div class="screen-bar">
+                <div class="screen-dots"><div class="screen-dot r"></div><div class="screen-dot y"></div><div class="screen-dot g"></div></div>
+                <div class="screen-url">railway.app → secretstore-api → Settings → Networking</div>
+              </div>
+              <div class="screen-body">
+  <span class="hl">Networking</span>
+
+  Public Networking
+  <span class="dim">Expose your service to the internet</span>
+
+  <span class="gr">[ Generate Domain ]</span>
+
+  <span class="dim">─── Resultado ─────────────────────────────────────</span>
+
+  <span class="box">secretstore-api-production.up.railway.app</span>
+  ↑ <span class="gr">Esta é a URL da sua API!</span>
+  <span class="dim">Anote ela — vai usar no programa .exe e no panel admin</span>
+              </div>
+            </div>
+            <div class="field-highlight">
+              <div class="label">📝 Cole no Bloco de Notas no campo "URL da API"</div>
+              Formato: <code>https://ALGO.up.railway.app</code> — adicione <code>https://</code> na frente se não vier automático.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 6. VARIÁVEIS DA API ══ -->
+    <div class="section" id="variaveis-api">
+      <div class="section-header">
+        <div class="section-icon" style="background:#fef9c3;">🔐</div>
+        <div>
+          <h2>Etapa 6 — Configurar Variáveis de Ambiente da API</h2>
+          <p>A etapa mais importante — sem isso a API não funciona</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title">📍 Como adicionar variáveis no Railway</div>
+        <div class="visual-steps">
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+            <div class="vstep-content"><strong>Clique no serviço "secretstore-api" no painel do projeto</strong></div>
+          </div>
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+            <div class="vstep-content"><strong>Clique na aba "Variables" no menu da esquerda</strong></div>
+          </div>
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+            <div class="vstep-content"><strong>Clique em "+ New Variable" para cada variável</strong><p>Ou use "Raw Editor" para colar todas de uma vez no formato <code>NOME=valor</code>.</p></div>
+          </div>
+          <div class="vstep">
+            <div class="vstep-line"><div class="vstep-dot"></div></div>
+            <div class="vstep-content"><strong>Preencha o Nome (exatamente como está) e o Valor</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚙️ Variáveis obrigatórias do serviço API</div>
+        <div class="env-group">
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">PORT</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">Porta onde a API escuta. Sempre 3001 para este projeto.</div>
+              <div class="env-value-box">3001</div>
+            </div>
+          </div>
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">NODE_ENV</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">Modo de execução. Sempre <code>production</code> no Railway.</div>
+              <div class="env-value-box">production</div>
+            </div>
+          </div>
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">DATABASE_URL</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">String de conexão com o banco PostgreSQL do Railway.</div>
+              <div class="env-value-box">postgresql://postgres:SenhaGerada@containers-us-west-XX.railway.app:5432/railway</div>
+              <div class="env-howto">
+                <div class="env-howto-title">Como obter</div>
+                <ol>
+                  <li>Clique no serviço PostgreSQL no painel do projeto</li>
+                  <li>Aba Variables → copie <code>DATABASE_URL</code></li>
+                  <li>Cole aqui</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">JWT_SECRET</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">Chave secreta para gerar tokens de autenticação. Deve ser longa e aleatória (64+ caracteres).</div>
+              <div class="env-howto">
+                <div class="env-howto-title">Como gerar</div>
+                <ol>
+                  <li><strong>No terminal:</strong> <code>node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"</code></li>
+                  <li><strong>Ou online:</strong> acesse <a href="https://generate-secret.vercel.app/64" target="_blank">generate-secret.vercel.app/64</a></li>
+                  <li>Copie o resultado de 64 caracteres e cole como valor</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">JWT_EXPIRES_IN</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">Quanto tempo o token do cliente (programa .exe) dura antes de expirar.</div>
+              <div class="env-value-box">7d</div>
+              <p style="font-size:12px;color:var(--gray-500);margin-top:6px;">7d = 7 dias. Outras opções: <code>24h</code>, <code>30d</code>, <code>1h</code></p>
+            </div>
+          </div>
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">JWT_ADMIN_EXPIRES_IN</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">Quanto tempo o token do administrador (panel admin) dura.</div>
+              <div class="env-value-box">24h</div>
+              <p style="font-size:12px;color:var(--gray-500);margin-top:6px;">24h = 24 horas. Mais curto por segurança.</p>
+            </div>
+          </div>
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">ADMIN_EMAIL</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">E-mail do administrador padrão. Será criado no primeiro seed do banco. Use para fazer login no Panel Admin.</div>
+              <div class="env-value-box">admin@secretstore.com</div>
+              <p style="font-size:12px;color:var(--gray-500);margin-top:6px;">Pode ser qualquer e-mail — é apenas para login no painel. Não precisa ser e-mail real.</p>
+            </div>
+          </div>
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">ADMIN_PASSWORD</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">Senha do administrador padrão. Use uma senha forte — mínimo 8 caracteres com letras, números e símbolos.</div>
+              <div class="env-value-box">MinhaSenhaForte@2025</div>
+              <div class="alert alert-danger" style="margin-top:8px;">
+                <div class="alert-icon">🔒</div>
+                <div class="alert-body">Use uma senha forte! Quem tiver essa senha controla todo o sistema. Nunca use "123456" ou "admin".</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">FRONTEND_URL</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">URL do Panel Admin. Necessário para o CORS (permitir que o painel web acesse a API).</div>
+              <div class="env-value-box">https://secretstore-panel-production.up.railway.app</div>
+              <div class="env-howto">
+                <div class="env-howto-title">Como obter</div>
+                <ol>
+                  <li>Você vai pegar esta URL na <strong>Etapa 8</strong> ao configurar o Panel Admin</li>
+                  <li>Pode adicionar depois — ou coloque um valor temporário e corrija depois</li>
+                  <li><strong>Sem barra no final!</strong> ✅ <code>https://algo.railway.app</code> ❌ <code>https://algo.railway.app/</code></li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Gerador de secrets -->
+      <div class="card">
+        <div class="card-title">🎲 Gerador Rápido de JWT_SECRET</div>
+        <p style="font-size:13.5px;color:var(--gray-600);margin-bottom:12px;">Clique no botão para gerar uma chave aleatória segura:</p>
+        <button onclick="generateSecret('jwt-gen')" style="padding:12px 24px;background:var(--primary);color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;">🎲 Gerar JWT_SECRET</button>
+        <div id="jwt-gen" style="margin-top:12px;display:none;"></div>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-icon">💡</div>
+        <div class="alert-body">
+          <strong>Dica — "Raw Editor" para colar tudo de uma vez:</strong> No Railway, na aba Variables, procure o botão "Raw Editor" ou "Bulk Import". Você pode colar todas as variáveis no formato abaixo de uma só vez:
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span>formato para "Raw Editor" — cole tudo de uma vez</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+        <pre>PORT=3001
+NODE_ENV=production
+DATABASE_URL=<span class="w">COLE_A_URL_DO_POSTGRESQL_AQUI</span>
+JWT_SECRET=<span class="w">COLE_O_SECRET_GERADO_AQUI</span>
+JWT_EXPIRES_IN=7d
+JWT_ADMIN_EXPIRES_IN=24h
+ADMIN_EMAIL=<span class="w">admin@secretstore.com</span>
+ADMIN_PASSWORD=<span class="w">SuaSenhaForte@2025</span>
+FRONTEND_URL=<span class="w">https://URL-DO-PANEL.up.railway.app</span></pre>
+      </div>
+    </div>
+
+    <!-- ══ 7. INICIALIZAR BANCO ══ -->
+    <div class="section" id="banco-init">
+      <div class="section-header">
+        <div class="section-icon" style="background:#d1fae5;">🌱</div>
+        <div>
+          <h2>Etapa 7 — Inicializar o Banco de Dados</h2>
+          <p>Criar as tabelas e o usuário admin padrão</p>
+        </div>
+      </div>
+
+      <div class="alert alert-warning">
+        <div class="alert-icon">⚠️</div>
+        <div class="alert-body">
+          <strong>Aguarde o deploy ter sucesso (✅ verde)</strong> antes de continuar. Se ainda está falhando, verifique as variáveis da Etapa 6.
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Confirme que o deploy da API está com status "Success"</h3>
+            <p>Clique no serviço API → aba <strong>Deployments</strong>. Deve mostrar ✅ verde.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Abra o terminal no Railway (aba "Shell")</h3>
+            <p>No serviço API, procure a aba <strong>"Shell"</strong> no menu. Se não aparecer, a API provida no histórico tem um endpoint de inicialização automática.</p>
+            <div class="alert alert-info">
+              <div class="alert-icon">💡</div>
+              <div class="alert-body"><strong>Alternativa sem Shell:</strong> A API que entregamos no histórico foi configurada para rodar a inicialização automaticamente na primeira vez. O start command no package.json pode ser:<br/><code>node database/init.js && node database/seed.js && node server.js</code><br/>Após o primeiro deploy com sucesso, mude para apenas: <code>node server.js</code></div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Se usando Shell, execute os comandos:</h3>
+            <div class="code-block">
+              <div class="code-header"><span>railway shell — serviço API</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+              <pre><span class="c"># Cria as tabelas no banco</span>
+node database/init.js
+
+<span class="c"># Popula com admin e dados iniciais</span>
+node database/seed.js</pre>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Resultado esperado:</h3>
+            <div class="screen-mock">
+              <div class="screen-bar">
+                <div class="screen-dots"><div class="screen-dot r"></div><div class="screen-dot y"></div><div class="screen-dot g"></div></div>
+                <div class="screen-url">railway shell</div>
+              </div>
+              <div class="screen-body">
+<span class="ok">✅ Tabela 'admins' criada com sucesso</span>
+<span class="ok">✅ Tabela 'clientes' criada com sucesso</span>
+<span class="ok">✅ Tabela 'sessoes' criada com sucesso</span>
+<span class="ok">✅ Tabela 'logs_acesso' criada com sucesso</span>
+<span class="ok">✅ Tabela 'help_info' criada com sucesso</span>
+<span class="ok">✅ Índices criados</span>
+<span class="dim">──────────────────────────────────────────</span>
+<span class="ok">✅ Admin criado: admin@secretstore.com</span>
+<span class="ok">✅ Help items padrão inseridos</span>
+<span class="ok">✅ Seed concluído com sucesso!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h3>Teste a API no navegador</h3>
+            <p>Acesse no navegador: <code>https://SUA-URL-API.up.railway.app/health</code></p>
+            <p>Deve retornar:</p>
+            <div class="code-block">
+              <div class="code-header"><span>resposta esperada do /health</span></div>
+              <pre>{
+  <span class="s">"success"</span>: <span class="ok">true</span>,
+  <span class="s">"status"</span>: <span class="s">"online"</span>,
+  <span class="s">"timestamp"</span>: <span class="s">"2025-01-15T10:30:00.000Z"</span>,
+  <span class="s">"version"</span>: <span class="s">"1.0.0"</span>
+}</pre>
+            </div>
+            <div class="alert alert-success">
+              <div class="alert-icon">✅</div>
+              <div class="alert-body">Se viu esse JSON, a API está funcionando! Prossiga para o Panel Admin.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-icon">🔄</div>
+        <div class="alert-body">
+          <strong>Se usou o start command com init+seed:</strong> Após confirmar que o banco foi criado (testando /health), vá em Settings do serviço API e mude o Start Command para apenas <code>node server.js</code>. Isso evita que o seed rode toda vez que reiniciar.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 8. PANEL ADMIN ══ -->
+    <div class="section" id="railway-panel">
+      <div class="section-header">
+        <div class="section-icon" style="background:#fce7f3;">🌐</div>
+        <div>
+          <h2>Etapa 8 — Adicionar o Serviço do Panel Admin</h2>
+          <p>O painel web onde você gerencia clientes e módulos</p>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>No projeto, clique em "+ New" → "GitHub Repo"</h3>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Selecione o repositório <code>secretstore-panel</code></h3>
+            <p>Se não aparecer, clique em "Configure GitHub App" e autorize acesso a este repo.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Gere o domínio público</h3>
+            <p>Serviço panel → Settings → Networking → <strong>"Generate Domain"</strong></p>
+            <div class="field-highlight">
+              <div class="label">📝 Cole no Bloco de Notas no campo "URL do Panel Admin"</div>
+              Algo como <code>https://secretstore-panel-production.up.railway.app</code>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>⚠️ Atualize a FRONTEND_URL na API</h3>
+            <p>Agora que você tem a URL do panel, volte ao serviço da <strong>API</strong> → Variables → atualize <code>FRONTEND_URL</code> com a URL do panel que acabou de gerar.</p>
+            <div class="alert alert-warning">
+              <div class="alert-icon">⚠️</div>
+              <div class="alert-body">Se não fizer isso, o panel vai receber erro de CORS ao tentar se comunicar com a API.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 9. VARIÁVEIS DO PANEL ══ -->
+    <div class="section" id="variaveis-panel">
+      <div class="section-header">
+        <div class="section-icon" style="background:#fef3c7;">🔐</div>
+        <div>
+          <h2>Etapa 9 — Variáveis de Ambiente do Panel Admin</h2>
+          <p>Configure no serviço do panel (NÃO no serviço da API)</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🌐 Variáveis do Panel Admin</div>
+        <div class="env-group">
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">NEXT_PUBLIC_API_URL</span>
+              <div class="env-meta"><span class="badge badge-required">obrig.</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">A URL completa da API. O panel usa isso para se comunicar com o backend. <strong>Sem esta variável, o painel não funciona.</strong></div>
+              <div class="env-value-box">https://secretstore-api-production.up.railway.app</div>
+              <div class="env-howto">
+                <div class="env-howto-title">Como obter</div>
+                <ol>
+                  <li>É a URL que você gerou na <strong>Etapa 5</strong>, passo 4</li>
+                  <li>A mesma que está no Bloco de Notas no campo "URL da API"</li>
+                  <li>Deve começar com <code>https://</code> e <strong>NÃO ter barra no final</strong></li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="env-item">
+            <div class="env-item-header" onclick="toggleEnv(this)">
+              <span class="env-name">NEXT_PUBLIC_APP_NAME</span>
+              <div class="env-meta"><span class="badge badge-optional">opcional</span><span class="env-toggle">›</span></div>
+            </div>
+            <div class="env-item-body">
+              <div class="env-desc">Nome que aparece no título do painel admin. Puramente visual.</div>
+              <div class="env-value-box">SecretStore Admin</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span>Raw Editor do Panel — cole tudo</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+        <pre>NEXT_PUBLIC_API_URL=<span class="w">https://SUA-URL-API.up.railway.app</span>
+NEXT_PUBLIC_APP_NAME=SecretStore Admin</pre>
+      </div>
+
+      <div class="alert alert-success">
+        <div class="alert-icon">✅</div>
+        <div class="alert-body">
+          <strong>Após salvar as variáveis:</strong> O Railway fará um redeploy automático. Aguarde o status ficar ✅ verde. Depois acesse a URL do panel no navegador — você deve ver a tela de login do painel admin.<br/><br/>
+          <strong>Faça login com:</strong> o e-mail e senha que você definiu em <code>ADMIN_EMAIL</code> e <code>ADMIN_PASSWORD</code>.
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 10. PROGRAMA CONFIG ══ -->
+    <div class="section" id="programa-config">
+      <div class="section-header">
+        <div class="section-icon" style="background:#e0f2fe;">💻</div>
+        <div>
+          <h2>Etapa 10 — Configurar a URL no Programa (.exe)</h2>
+          <p>Apontar o programa para a API correta antes de compilar</p>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-icon">💡</div>
+        <div class="alert-body">
+          <strong>O que fazer aqui:</strong> Abrir o arquivo <code>api-client.js</code> no código do programa e trocar a URL placeholder pela URL real da sua API (a mesma que você gerou na Etapa 5).
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Abra a pasta do programa no seu editor de código</h3>
+            <p>É a pasta <code>secretstore-organizer</code> — o projeto Electron.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Abra o arquivo <code>api-client.js</code></h3>
+            <p>Está na raiz da pasta do projeto. Procure a linha com a URL placeholder:</p>
+            <div class="screen-mock">
+              <div class="screen-bar">
+                <div class="screen-dots"><div class="screen-dot r"></div><div class="screen-dot y"></div><div class="screen-dot g"></div></div>
+                <div class="screen-url">api-client.js — linha ~3</div>
+              </div>
+              <div class="screen-body">
+<span class="dim">// api-client.js</span>
+
+<span class="k">const</span> <span class="v">API_BASE_URL</span> = <span class="s">'https://SEU-PROJETO.up.railway.app'</span>;
+                         <span class="red">↑ TROQUE ESTA URL!</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Substitua pela URL real da API</h3>
+            <div class="code-block">
+              <div class="code-header"><span>api-client.js — ANTES</span></div>
+              <pre><span class="k">const</span> <span class="v">API_BASE_URL</span> = <span class="s">'https://SEU-PROJETO.up.railway.app'</span>;</pre>
+            </div>
+            <div class="code-block">
+              <div class="code-header"><span>api-client.js — DEPOIS (exemplo)</span></div>
+              <pre><span class="k">const</span> <span class="v">API_BASE_URL</span> = <span class="s">'https://secretstore-api-production.up.railway.app'</span>;</pre>
+            </div>
+            <div class="alert alert-danger">
+              <div class="alert-icon">🚨</div>
+              <div class="alert-body">
+                <strong>Regras da URL:</strong>
+                <ul>
+                  <li>Deve começar com <code>https://</code></li>
+                  <li>NÃO pode ter barra <code>/</code> no final</li>
+                  <li>Deve ser a URL da <strong>API</strong>, não do Panel Admin</li>
+                  <li>Se errar, o programa vai mostrar "Sem conexão" ao abrir</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Salve o arquivo (Ctrl+S)</h3>
+            <p>Pronto! Agora o programa sabe para onde enviar as requisições de login e verificação de módulos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 11. COMPILAR PROGRAMA ══ -->
+    <div class="section" id="programa-build">
+      <div class="section-header">
+        <div class="section-icon" style="background:#d1fae5;">🔨</div>
+        <div>
+          <h2>Etapa 11 — Compilar o Programa (.exe)</h2>
+          <p>Gerar o executável final que você entrega para os clientes</p>
+        </div>
+      </div>
+
+      <div class="alert alert-warning">
+        <div class="alert-icon">📋</div>
+        <div class="alert-body">
+          <strong>Pré-requisitos no seu PC:</strong>
+          <ul>
+            <li><strong>Node.js</strong> — baixe em <a href="https://nodejs.org" target="_blank">nodejs.org</a> (versão LTS)</li>
+            <li><strong>Python</strong> — baixe em <a href="https://python.org/downloads" target="_blank">python.org</a> (marque "Add to PATH" durante instalação!)</li>
+            <li><strong>PyInstaller</strong> — instale com: <code>python -m pip install pyinstaller</code></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Verifique se tudo está instalado</h3>
+            <p>Abra o terminal (<code>cmd</code> no Windows) e execute:</p>
+            <div class="code-block">
+              <div class="code-header"><span>terminal — verificar pré-requisitos</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+              <pre>node --version
+python --version
+python -m PyInstaller --version</pre>
+            </div>
+            <p style="margin-top:8px;font-size:13px;color:var(--gray-600);">Todos devem retornar uma versão (ex: <code>v20.11.0</code>, <code>Python 3.12.0</code>, <code>6.11.0</code>). Se algum falhar, instale o programa correspondente.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Use o arquivo <code>build.bat</code> (recomendado)</h3>
+            <p>O arquivo <code>build.bat</code> já está na pasta do projeto. Ele faz tudo automaticamente:</p>
+            <div class="visual-steps">
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Navegue até a pasta do programa no Explorer</strong><p>A pasta <code>secretstore-organizer</code></p></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Dê duplo clique no arquivo <code>build.bat</code></strong><p>Uma janela de terminal preta vai abrir e começar a compilar.</p></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div></div>
+                <div class="vstep-content"><strong>Aguarde finalizar (~5-10 minutos na primeira vez)</strong><p>O script compila os 5 módulos Python e depois gera o .exe do Electron.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Resultado esperado</h3>
+            <div class="screen-mock">
+              <div class="screen-bar">
+                <div class="screen-dots"><div class="screen-dot r"></div><div class="screen-dot y"></div><div class="screen-dot g"></div></div>
+                <div class="screen-url">build.bat — resultado final</div>
+              </div>
+              <div class="screen-body">
+<span class="ok">═══════════════════════════════════════════════════════</span>
+<span class="ok">  ✅ BUILD CONCLUÍDO COM SUCESSO!</span>
+<span class="ok">═══════════════════════════════════════════════════════</span>
+
+  O executável está em:
+  <span class="box">dist\SecretStore-Organizer-2.1.0.exe</span>
+
+  <span class="dim">Tamanho: ~180 MB (normal para Electron + Python)</span>
+  <span class="dim">Tipo: Portable (não precisa instalar)</span>
+
+<span class="ok">═══════════════════════════════════════════════════════</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Teste o programa antes de distribuir</h3>
+            <div class="visual-steps">
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Execute o <code>SecretStore-Organizer-2.1.0.exe</code> gerado</strong><p>Está na pasta <code>dist</code></p></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Deve mostrar a tela de login (não "Sem conexão")</strong><p>Se mostrar "Sem conexão", a URL em <code>api-client.js</code> está errada — volte à Etapa 10.</p></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div></div>
+                <div class="vstep-content">
+                  <strong>Faça login com um cliente de teste</strong>
+                  <p>Primeiro, crie um cliente no Panel Admin (Etapa 12). Depois teste o login no programa.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-icon">💡</div>
+        <div class="alert-body">
+          <strong>Alternativa sem build.bat — comandos manuais:</strong>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span>terminal — compilação manual passo a passo</span><button class="copy-btn" onclick="copyCode(this)">Copiar</button></div>
+        <pre><span class="c"># 1. Entrar na pasta do projeto</span>
+cd secretstore-organizer
+
+<span class="c"># 2. Instalar dependências Node.js</span>
+npm install
+
+<span class="c"># 3. Instalar PyInstaller (se ainda não tem)</span>
+python -m pip install pyinstaller
+
+<span class="c"># 4. Compilar os 5 scripts Python</span>
+cd python
+python -m PyInstaller --noconfirm --clean --onefile --name organizar_mapas engine.py
+python -m PyInstaller --noconfirm --clean --onefile --name organizar_veiculos organizar_veiculos.py
+python -m PyInstaller --noconfirm --clean --onefile --name organizar_roupas organizar_roupas.py
+python -m PyInstaller --noconfirm --clean --onefile --name organizar_peds organizar_peds.py
+python -m PyInstaller --noconfirm --clean --onefile --name organizar_weapons organizar_weapons.py
+cd ..
+
+<span class="c"># 5. Compilar o executável Electron</span>
+npx electron-builder --win portable
+
+<span class="c"># 6. O .exe estará em dist/</span></pre>
+      </div>
+    </div>
+
+    <!-- ══ 12. TESTAR TUDO ══ -->
+    <div class="section" id="testar-tudo">
+      <div class="section-header">
+        <div class="section-icon" style="background:#d1fae5;">🧪</div>
+        <div>
+          <h2>Etapa 12 — Testar Todo o Sistema</h2>
+          <p>Verificar que API, Panel e Programa funcionam juntos</p>
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h3>Teste a API (já feito na Etapa 7)</h3>
+            <p>Acesse <code>https://SUA-URL-API.railway.app/health</code> — deve retornar JSON com <code>"status": "online"</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h3>Teste o Panel Admin</h3>
+            <div class="visual-steps">
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Acesse a URL do Panel Admin no navegador</strong></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Faça login com ADMIN_EMAIL e ADMIN_PASSWORD</strong></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Crie um cliente de teste:</strong>
+                  <p>Menu "Clientes" → "Novo Cliente" → preencha e-mail, nome, senha temporária e marque os módulos permitidos (ex: mapas, veículos).</p>
+                </div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div></div>
+                <div class="vstep-content"><strong>Anote o e-mail e senha do cliente criado</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h3>Teste o Programa (.exe)</h3>
+            <div class="visual-steps">
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Abra o programa <code>SecretStore-Organizer-2.1.0.exe</code></strong></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>A tela de login deve aparecer (sem erro "Sem conexão")</strong></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Faça login com o e-mail e senha do cliente criado no passo 2</strong></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div><div class="vstep-connector"></div></div>
+                <div class="vstep-content"><strong>Se for senha temporária, o programa pedirá para trocar — troque</strong></div>
+              </div>
+              <div class="vstep">
+                <div class="vstep-line"><div class="vstep-dot"></div></div>
+                <div class="vstep-content"><strong>Após login, verifique que os módulos permitidos aparecem habilitados</strong><p>Módulos não autorizados devem aparecer bloqueados/desabilitados.</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h3>Verificar no Panel que o login apareceu</h3>
+            <p>Volte ao Panel Admin → seção "Logs" ou na página do cliente — deve mostrar o login registrado com data/hora e device ID.</p>
+            <div class="alert alert-success">
+              <div class="alert-icon">🎉</div>
+              <div class="alert-body">Se tudo funcionou: <strong>parabéns! O sistema está completo e operacional.</strong> Agora é só cadastrar seus clientes reais e distribuir o .exe.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CHECKLIST FINAL ══ -->
+    <div class="section" id="checklist">
+      <div class="section-header">
+        <div class="section-icon" style="background:#d1fae5;">✅</div>
+        <div>
+          <h2>Checklist Final</h2>
+          <p>Clique em cada item para marcar como concluído</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔧 Preparação</div>
+        <ul class="checklist">
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Conta criada no GitHub</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Conta criada no Railway (login com GitHub)</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Repositório <code>secretstore-api</code> enviado para o GitHub</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Repositório <code>secretstore-panel</code> enviado para o GitHub</span></li>
+        </ul>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">🚂 Railway — Infraestrutura</div>
+        <ul class="checklist">
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Projeto criado no Railway</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>PostgreSQL adicionado e DATABASE_URL copiada</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Serviço API adicionado (repo secretstore-api)</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Domínio público da API gerado e anotado</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Todas as variáveis da API configuradas (PORT, NODE_ENV, DATABASE_URL, JWT_SECRET, etc.)</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Banco inicializado (tabelas criadas + seed admin)</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>API com deploy ✅ verde e /health retornando "online"</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Serviço Panel Admin adicionado (repo secretstore-panel)</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Domínio público do Panel gerado e anotado</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>FRONTEND_URL atualizada na API com URL do Panel</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Variáveis do Panel configuradas (NEXT_PUBLIC_API_URL)</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Panel Admin com deploy ✅ verde e tela de login visível</span></li>
+        </ul>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">💻 Programa (.exe)</div>
+        <ul class="checklist">
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>URL da API atualizada em <code>api-client.js</code></span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Node.js, Python e PyInstaller instalados no PC</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span><code>build.bat</code> executado com sucesso</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>.exe gerado na pasta <code>dist/</code></span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Programa testado — login funciona</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Módulos corretos aparecem habilitados/desabilitados conforme permissões</span></li>
+        </ul>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">🧪 Teste de Integração</div>
+        <ul class="checklist">
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Login no Panel Admin funcionando</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Cliente criado pelo Panel Admin</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Login no programa com credenciais do cliente — sucesso</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Log de acesso registrado e visível no Panel</span></li>
+          <li onclick="toggleCheck(this)"><div class="check-box"></div><span>Reset de senha pelo Panel → cliente consegue redefinir no programa</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ══ PROBLEMAS COMUNS ══ -->
+    <div class="section" id="problemas">
+      <div class="section-header">
+        <div class="section-icon" style="background:#fee2e2;">🔧</div>
+        <div>
+          <h2>Problemas Comuns e Como Resolver</h2>
+          <p>Se algo deu errado, encontre seu problema aqui</p>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <div class="alert-icon">🔍</div>
+        <div class="alert-body">
+          <strong>Como ver os logs de erro:</strong> No Railway, clique no serviço com problema → aba <strong>Deployments</strong> → clique no deploy → <strong>View Logs</strong>. Leia as últimas linhas em vermelho.
+        </div>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-num warn">!</div>
+          <div class="step-body">
+            <h3>Programa mostra "Sem conexão" ao abrir</h3>
+            <p><strong>Causa:</strong> A URL em <code>api-client.js</code> está errada, ou a API não está rodando.</p>
+            <ol style="padding-left:16px;font-size:14px;color:var(--gray-600);line-height:1.8;">
+              <li>Abra o navegador e acesse <code>https://SUA-URL-API.railway.app/health</code></li>
+              <li>Se retornar JSON → a API está OK. O problema é na URL do programa.</li>
+              <li>Se der erro → a API não está rodando. Verifique os logs no Railway.</li>
+              <li>Confirme que a URL em <code>api-client.js</code> é exatamente igual à URL da API no Railway</li>
+              <li>Confirme que começa com <code>https://</code> e NÃO tem barra no final</li>
+              <li>Após corrigir, compile novamente (Etapa 11)</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num warn">!</div>
+          <div class="step-body">
+            <h3>Panel Admin mostra tela branca ou "Network Error"</h3>
+            <p><strong>Causa:</strong> A variável <code>NEXT_PUBLIC_API_URL</code> está errada ou faltando no serviço do panel.</p>
+            <ol style="padding-left:16px;font-size:14px;color:var(--gray-600);line-height:1.8;">
+              <li>Vá ao serviço do panel no Railway → Variables</li>
+              <li>Verifique se <code>NEXT_PUBLIC_API_URL</code> existe e aponta para a URL da <strong>API</strong> (não do panel!)</li>
+              <li>Deve começar com <code>https://</code> e não ter barra no final</li>
+              <li>Após corrigir, aguarde o redeploy automático</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num warn">!</div>
+          <div class="step-body">
+            <h3>Erro CORS — "Access to fetch has been blocked"</h3>
+            <p><strong>Causa:</strong> A variável <code>FRONTEND_URL</code> no serviço da API não corresponde à URL do panel.</p>
+            <ol style="padding-left:16px;font-size:14px;color:var(--gray-600);line-height:1.8;">
+              <li>Vá ao serviço da <strong>API</strong> → Variables → <code>FRONTEND_URL</code></li>
+              <li>O valor deve ser exatamente a URL do panel (com https, sem barra final)</li>
+              <li>Se você mudou o domínio do panel, atualize esta variável na API</li>
+              <li>Após atualizar, o serviço reinicia automaticamente</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num warn">!</div>
+          <div class="step-body">
+            <h3>Deploy da API falha — "Cannot find module" ou "DATABASE_URL is required"</h3>
+            <p><strong>Causa:</strong> Variáveis de ambiente não configuradas ou com valor errado.</p>
+            <ol style="padding-left:16px;font-size:14px;color:var(--gray-600);line-height:1.8;">
+              <li>Nos logs, identifique qual variável está faltando</li>
+              <li>Vá em Variables da API e confirme que todas da Etapa 6 existem</li>
+              <li>Verifique se não tem espaços extras no início ou final dos valores</li>
+              <li>Após corrigir, clique em "Redeploy" no menu do serviço</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num warn">!</div>
+          <div class="step-body">
+            <h3>Login no programa retorna "Credenciais inválidas" mesmo com senha correta</h3>
+            <p><strong>Causa:</strong> O cliente pode não existir no banco, ou a senha foi hasheada incorretamente.</p>
+            <ol style="padding-left:16px;font-size:14px;color:var(--gray-600);line-height:1.8;">
+              <li>No Panel Admin, verifique se o cliente existe na lista</li>
+              <li>Confirme que o status é "ativo" (não "bloqueado" ou "inativo")</li>
+              <li>Tente fazer um "Reset de senha" pelo Panel → defina nova senha → tente novamente</li>
+              <li>Se o problema persistir, verifique nos logs da API se a requisição está chegando</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num warn">!</div>
+          <div class="step-body">
+            <h3>'pyinstaller' não reconhecido ao rodar o build.bat</h3>
+            <p><strong>Causa:</strong> Python ou PyInstaller não está no PATH do sistema.</p>
+            <ol style="padding-left:16px;font-size:14px;color:var(--gray-600);line-height:1.8;">
+              <li>Instale o Python de <a href="https://python.org/downloads" target="_blank">python.org</a> — marque <strong>"Add Python to PATH"</strong> durante a instalação</li>
+              <li>Feche e reabra o terminal após instalar</li>
+              <li>Execute: <code>python -m pip install pyinstaller</code></li>
+              <li>Teste: <code>python -m PyInstaller --version</code> — deve mostrar um número</li>
+              <li>O build.bat já usa <code>python -m PyInstaller</code> ao invés de <code>pyinstaller</code> direto, então deve funcionar após instalar</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num warn">!</div>
+          <div class="step-body">
+            <h3>Programa funciona no meu PC mas não no PC do cliente</h3>
+            <p><strong>Causa:</strong> O antivírus do cliente pode estar bloqueando, ou falta o runtime.</p>
+            <ol style="padding-left:16px;font-size:14px;color:var(--gray-600);line-height:1.8;">
+              <li>Peça para o cliente adicionar uma exceção no antivírus para o .exe</li>
+              <li>Confirme que o PC do cliente tem conexão com internet (o programa precisa para fazer login)</li>
+              <li>Se o PC não tem internet, o programa pode funcionar offline por 30 dias após o primeiro login (funcionalidade de cache)</li>
+              <li>Verifique se o firewall corporativo não está bloqueando o acesso a <code>*.railway.app</code></li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-num warn">!</div>
+          <div class="step-body">
+            <h3>Railway mostra "Out of credits" ou "Service sleeping"</h3>
+            <p><strong>Causa:</strong> O plano gratuito do Railway tem limite de $5/mês.</p>
+            <ol style="padding-left:16px;font-size:14px;color:var(--gray-600);line-height:1.8;">
+              <li>Monitore o uso em <strong>Settings → Usage</strong> no painel do projeto</li>
+              <li>Para um sistema leve como este, $5/mês costuma ser suficiente</li>
+              <li>Se precisar mais, faça upgrade para o plano Hobby ($5/mês fixo + consumo)</li>
+              <li>Dica: se estiver apenas testando, pause os serviços quando não estiver usando</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-success" style="margin-top:24px;">
+        <div class="alert-icon">💬</div>
+        <div class="alert-body">
+          <strong>Problema diferente?</strong> Copie a mensagem de erro exata dos logs do Railway e envie. Quanto mais detalhes, mais rápido a resolução.
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<footer class="footer">
+  <p>📖 Manual de Deploy — SecretStore Organizer v2.1.0 &nbsp;|&nbsp; API + Panel Admin + Programa (.exe) &nbsp;|&nbsp; Railway + PostgreSQL + Electron</p>
+</footer>
+
+<!-- ══════════════════════ SCRIPTS ══════════════════════ -->
+<script>
+  /* ── Notepad ── */
+  let notepadVisible = false;
+
+  function updateNotepad(input) {
+    const statusEl = document.getElementById(input.id + '_st');
+    if (input.value.trim().length > 0) {
+      input.classList.add('filled');
+      if (statusEl) statusEl.textContent = '✅';
+    } else {
+      input.classList.remove('filled');
+      if (statusEl) statusEl.textContent = '⬜';
+    }
+    updateNotepadCount();
+  }
+
+  function updateNotepadCount() {
+    const inputs = document.querySelectorAll('.notepad-input');
+    let filled = 0;
+    inputs.forEach(i => { if (i.value.trim().length > 0) filled++; });
+    const total = inputs.length;
+    const label = document.getElementById('notepad-count-label');
+    const badge = document.getElementById('notepad-progress-badge');
+    if (label) label.textContent = `${filled} de ${total} campos preenchidos`;
+    if (badge) badge.textContent = `${filled} / ${total} preenchidas`;
+  }
+
+  function toggleNotepadVisibility() {
+    notepadVisible = !notepadVisible;
+    document.querySelectorAll('.notepad-input[type="password"]').forEach(inp => {
+      inp.type = notepadVisible ? 'text' : 'password';
+    });
+    document.querySelectorAll('.notepad-input[type="text"]').forEach(inp => {
+      // keep text inputs as text
+    });
+  }
+
+  function copyAllNotepad() {
+    const lines = [];
+    lines.push('# ==============================');
+    lines.push('# VARIÁVEIS — SERVIÇO API');
+    lines.push('# ==============================');
+    lines.push('PORT=3001');
+    lines.push('NODE_ENV=production');
+
+    const dbUrl = document.getElementById('npad_DATABASE_URL');
+    lines.push(`DATABASE_URL=${dbUrl ? dbUrl.value.trim() || '(preencher)' : '(preencher)'}`);
+
+    const jwt = document.getElementById('npad_JWT_SECRET');
+    lines.push(`JWT_SECRET=${jwt ? jwt.value.trim() || '(preencher)' : '(preencher)'}`);
+
+    const jwtExp = document.getElementById('npad_JWT_EXPIRES_IN');
+    lines.push(`JWT_EXPIRES_IN=${jwtExp ? jwtExp.value.trim() || '7d' : '7d'}`);
+
+    const jwtAdm = document.getElementById('npad_JWT_ADMIN_EXPIRES_IN');
+    lines.push(`JWT_ADMIN_EXPIRES_IN=${jwtAdm ? jwtAdm.value.trim() || '24h' : '24h'}`);
+
+    const admEmail = document.getElementById('npad_ADMIN_EMAIL');
+    lines.push(`ADMIN_EMAIL=${admEmail ? admEmail.value.trim() || '(preencher)' : '(preencher)'}`);
+
+    const admPass = document.getElementById('npad_ADMIN_PASSWORD');
+    lines.push(`ADMIN_PASSWORD=${admPass ? admPass.value.trim() || '(preencher)' : '(preencher)'}`);
+
+    const panelUrl = document.getElementById('npad_PANEL_URL');
+    lines.push(`FRONTEND_URL=${panelUrl ? panelUrl.value.trim() || '(preencher)' : '(preencher)'}`);
+
+    lines.push('');
+    lines.push('# ==============================');
+    lines.push('# VARIÁVEIS — SERVIÇO PANEL ADMIN');
+    lines.push('# ==============================');
+
+    const apiUrl = document.getElementById('npad_API_URL');
+    lines.push(`NEXT_PUBLIC_API_URL=${apiUrl ? apiUrl.value.trim() || '(preencher)' : '(preencher)'}`);
+    lines.push('NEXT_PUBLIC_APP_NAME=SecretStore Admin');
+
+    lines.push('');
+    lines.push('# ==============================');
+    lines.push('# PROGRAMA (.exe) — api-client.js');
+    lines.push('# ==============================');
+    lines.push(`# API_BASE_URL = '${apiUrl ? apiUrl.value.trim() || 'https://SUA-URL.railway.app' : 'https://SUA-URL.railway.app'}'`);
+
+    const text = lines.join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.querySelector('.notepad-copy-all');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✅ Copiado!';
+      btn.style.background = '#059669';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; }, 3000);
+    });
+  }
+
+  /* ── Copy code ── */
+  function copyCode(btn) {
+    const pre = btn.closest('.code-block').querySelector('pre');
+    const text = pre.innerText.replace(/\u00a0/g, ' ');
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copiado!';
+      btn.style.background = '#059669';
+      btn.style.color = 'white';
+      setTimeout(() => {
+        btn.textContent = orig;
+        btn.style.background = '';
+        btn.style.color = '';
+      }, 2000);
+    });
+  }
+
+  /* ── Toggle env ── */
+  function toggleEnv(header) {
+    const body = header.nextElementSibling;
+    const toggle = header.querySelector('.env-toggle');
+    body.classList.toggle('open');
+    toggle.classList.toggle('open');
+  }
+
+  /* ── Toggle checklist ── */
+  function toggleCheck(li) {
+    li.classList.toggle('done');
+    if (li.classList.contains('done')) {
+      li.querySelector('.check-box').textContent = '✓';
+    } else {
+      li.querySelector('.check-box').textContent = '';
+    }
+  }
+
+  /* ── Progress bar ── */
+  const fill = document.getElementById('progressFill');
+  const pct = document.getElementById('progressPct');
+  const sections = document.querySelectorAll('.section');
+
+  window.addEventListener('scroll', () => {
+    const total = document.body.scrollHeight - window.innerHeight;
+    const progress = Math.round((window.scrollY / total) * 100);
+    fill.style.width = progress + '%';
+    pct.textContent = progress + '%';
+
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 100) current = s.id;
+    });
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.classList.remove('active');
+      if (item.getAttribute('href') === '#' + current) {
+        item.classList.add('active');
+      }
+    });
+  });
+
+  /* ── Generate secret ── */
+  function generateSecret(targetId) {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    const hex = Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+    const div = document.getElementById(targetId);
+    div.style.display = 'block';
+    div.innerHTML = `
+      <div style="background:#0f172a;border-radius:8px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <code style="background:transparent;color:#86efac;font-size:12px;word-break:break-all;padding:0;">${hex}</code>
+        <button onclick="navigator.clipboard.writeText('${hex}').then(()=>{ this.textContent='✓ Copiado!'; setTimeout(()=>this.textContent='Copiar',2000) })"
+          style="padding:6px 12px;background:#334155;color:#94a3b8;border:none;border-radius:6px;cursor:pointer;font-size:11px;white-space:nowrap;flex-shrink:0;">
+          Copiar
+        </button>
+      </div>
+    `;
+  }
+
+  /* ── Smooth scroll ── */
+  document.querySelectorAll('.nav-item[href^="#"]').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // Initialize notepad count
+  updateNotepadCount();
+</script>
+
+</body>
+</html>
