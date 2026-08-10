@@ -1,0 +1,24 @@
+{
+    "name": "secretstore-api",
+    "version": "1.0.0",
+    "description": "SecretStore REST API — Express + PostgreSQL",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node --watch server.js",
+        "db:init": "node database/init.js",
+        "db:seed": "node database/seed.js",
+        "db:reset": "node database/init.js && node database/seed.js"
+    },
+    "dependencies": {
+        "bcrypt": "^5.1.1",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.7",
+        "express": "^4.21.2",
+        "jsonwebtoken": "^9.0.2",
+        "pg": "^8.13.1"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}
