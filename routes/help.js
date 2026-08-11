@@ -1,15 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/helpController');
-const adminAuthMiddleware = require('../middleware/adminAuth');
+const pool = require('../database/connection');
 
-// Pública (programa desktop busca isso)
-router.get('/public', controller.getPublic);
-
-// Admin (CRUD)
-router.get('/', adminAuthMiddleware, controller.listAll);
-router.post('/', adminAuthMiddleware, controller.create);
-router.put('/:id', adminAuthMiddleware, controller.update);
-router.delete('/:id', adminAuthMiddleware, controller.remove);
+router.get('/', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT titulo, conteudo FROM help_info WHERE ativo = true ORDER BY ordem ASC'
+        );
+        res.json({ success: true, items: result.rows });
+    } catch (error) {
+        console.error('[Help]', error.message);
+        res.status(500).json({ success: false, message: 'Erro ao buscar ajuda' });
+    }
+});
 
 module.exports = router;
