@@ -159,7 +159,7 @@ const clientAuthController = {
 
             const novaHash = await hashPassword(new_password);
             await pool.query(
-                'UPDATE clientes SET senha_hash = $1, is_senha_temporaria = false, atualizado_em = CURRENT_TIMESTAMP WHERE id = $2',
+                'UPDATE clientes SET senha_hash = $1, is_senha_temporaria = false, reset_solicitado = false, reset_aprovado = false, atualizado_em = CURRENT_TIMESTAMP WHERE id = $2',
                 [novaHash, userId]
             );
 
