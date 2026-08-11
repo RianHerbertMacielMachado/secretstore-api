@@ -7,7 +7,7 @@ const clientAuthController = {
     // ─── LOGIN ────────────────────────────────────────────────────────────────
     async login(req, res) {
         try {
-            const { email, password, device_id } = req.body;
+            const { email, password, device_id, device_name } = req.body;
 
             if (!email || !password) {
                 return res.status(400).json({
@@ -44,7 +44,6 @@ const clientAuthController = {
             // Verificar senha
             const senhaValida = await comparePassword(password, cliente.senha_hash);
             if (!senhaValida) {
-                // Log de tentativa falha
                 await pool.query(
                     'INSERT INTO logs_acesso (cliente_id, email, acao, detalhes, device_id) VALUES ($1, $2, $3, $4, $5)',
                     [cliente.id, email, 'login_falha', 'Senha incorreta', device_id || null]
@@ -57,10 +56,39 @@ const clientAuthController = {
                 });
             }
 
-            // Atualizar device_id e último login
+            // ══════════════════════════════════════════════════════════════
+            // ✅ CORREÇÃO: Verificar vínculo de dispositivo
+            // ══════════════════════════════════════════════════════════════
+            const incomingDeviceId = device_id || req.headers['x-device-id'] || null;
+            const incomingDeviceName = device_name || req.headers['x-device-name'] || 'Desconhecido';
+
+            // Se já tem device vinculado E o device atual é diferente → BLOQUEAR
+            if (cliente.device_id && incomingDeviceId && cliente.device_id !== incomingDeviceId) {
+                await pool.query(
+                    'INSERT INTO logs_acesso (cliente_id, email, acao, detalhes, device_id) VALUES ($1, $2, $3, $4, $5)',
+                    [cliente.id, email, 'login_bloqueado', `Tentativa de outro dispositivo. Vinculado: ${cliente.device_id}, Tentativa: ${incomingDeviceId}`, incomingDeviceId]
+                );
+
+                return res.status(403).json({
+                    success: false,
+                    error: 'device_mismatch',
+                    message: 'Esta conta já está vinculada a outro dispositivo. Contate o suporte para liberar.'
+                });
+            }
+
+            // ══════════════════════════════════════════════════════════════
+            // ✅ CORREÇÃO: Atualizar TODOS os campos de dispositivo
+            // ══════════════════════════════════════════════════════════════
             await pool.query(
-                'UPDATE clientes SET device_id = $1, ultimo_login = CURRENT_TIMESTAMP, atualizado_em = CURRENT_TIMESTAMP WHERE id = $2',
-                [device_id || cliente.device_id, cliente.id]
+                `UPDATE clientes SET 
+                    device_id = $1, 
+                    device_nome = $2, 
+                    device_registrado = TRUE, 
+                    ultimo_login = CURRENT_TIMESTAMP,
+                    data_ultimo_acesso = CURRENT_TIMESTAMP,
+                    atualizado_em = CURRENT_TIMESTAMP 
+                WHERE id = $3`,
+                [incomingDeviceId || cliente.device_id, incomingDeviceName, cliente.id]
             );
 
             // Gerar token JWT
@@ -69,7 +97,7 @@ const clientAuthController = {
             // Log de sucesso
             await pool.query(
                 'INSERT INTO logs_acesso (cliente_id, email, acao, detalhes, device_id) VALUES ($1, $2, $3, $4, $5)',
-                [cliente.id, email, 'login_sucesso', null, device_id || null]
+                [cliente.id, email, 'login_sucesso', `Dispositivo: ${incomingDeviceName}`, incomingDeviceId || null]
             );
 
             // Buscar help_info
@@ -114,32 +142,27 @@ const clientAuthController = {
                 });
             }
 
-            // Validar força da nova senha
             const validation = validatePasswordStrength(new_password);
             if (!validation.valid) {
                 return res.status(400).json({ success: false, message: validation.message });
             }
 
-            // Buscar senha atual
             const result = await pool.query('SELECT senha_hash FROM clientes WHERE id = $1', [userId]);
             if (result.rows.length === 0) {
                 return res.status(404).json({ success: false, message: 'Usuário não encontrado.' });
             }
 
-            // Verificar senha atual
             const senhaValida = await comparePassword(current_password, result.rows[0].senha_hash);
             if (!senhaValida) {
                 return res.status(401).json({ success: false, message: 'Senha atual incorreta.' });
             }
 
-            // Atualizar senha
             const novaHash = await hashPassword(new_password);
             await pool.query(
                 'UPDATE clientes SET senha_hash = $1, is_senha_temporaria = false, atualizado_em = CURRENT_TIMESTAMP WHERE id = $2',
                 [novaHash, userId]
             );
 
-            // Log
             await pool.query(
                 'INSERT INTO logs_acesso (cliente_id, acao, detalhes) VALUES ($1, $2, $3)',
                 [userId, 'senha_alterada', 'Senha alterada pelo usuário']
@@ -174,7 +197,6 @@ const clientAuthController = {
                 [novaHash, userId]
             );
 
-            // Log
             await pool.query(
                 'INSERT INTO logs_acesso (cliente_id, acao, detalhes) VALUES ($1, $2, $3)',
                 [userId, 'senha_definida', 'Nova senha definida após reset']
@@ -203,20 +225,17 @@ const clientAuthController = {
             );
 
             if (result.rows.length === 0) {
-                // Não revelar se o email existe
                 return res.status(200).json({
                     success: true,
                     message: 'Se o email estiver cadastrado, a solicitação foi enviada.'
                 });
             }
 
-            // Marcar reset_solicitado
             await pool.query(
-                'UPDATE clientes SET reset_solicitado = true, atualizado_em = CURRENT_TIMESTAMP WHERE id = $1',
+                'UPDATE clientes SET reset_solicitado = true, reset_data_solicitacao = CURRENT_TIMESTAMP, atualizado_em = CURRENT_TIMESTAMP WHERE id = $1',
                 [result.rows[0].id]
             );
 
-            // Log
             await pool.query(
                 'INSERT INTO logs_acesso (cliente_id, email, acao) VALUES ($1, $2, $3)',
                 [result.rows[0].id, email, 'reset_solicitado']
@@ -274,7 +293,6 @@ const clientAuthController = {
     // ─── LOGOUT ───────────────────────────────────────────────────────────────
     async logout(req, res) {
         try {
-            // Log
             await pool.query(
                 'INSERT INTO logs_acesso (cliente_id, acao) VALUES ($1, $2)',
                 [req.userId, 'logout']
